@@ -109,7 +109,13 @@ public class Router {
    * output the neighbors of the routers
    */
   private void processNeighbors() {
-
+      int count = 1;
+      for (int i = 0; i < ports.length; ++i) {
+          if(ports[i] != null && ports[i].r2.status == RouterStatus.TWO_WAY) {
+              System.out.println("IP Address of neighbour " + count + " is : " + ports[i].r2.simulatedIPAddress);
+              count++;
+          }
+      }
   }
 
   /**
