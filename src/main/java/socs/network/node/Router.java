@@ -136,8 +136,13 @@ public class Router {
           processQuit();
         } else if (command.startsWith("attach ")) {
           String[] cmdLine = command.split(" ");
-          processAttach(cmdLine[1], Short.parseShort(cmdLine[2]),
-                  cmdLine[3], Short.parseShort(cmdLine[4]));
+          if (cmdLine.length == 5) {
+              processAttach(cmdLine[1], Short.parseShort(cmdLine[2]),
+                      cmdLine[3], Short.parseShort(cmdLine[4]));
+          }
+          else {
+            System.err.println("Command not recognized.");
+          }
         } else if (command.equals("start")) {
           processStart();
         } else if (command.equals("connect ")) {
@@ -148,8 +153,8 @@ public class Router {
           //output neighbors
           processNeighbors();
         } else {
-            System.out.println("Command not recognized.");
-          break;
+            System.err.println("Command not recognized.");
+            break;
         }
         System.out.print(">> ");
         command = br.readLine();
