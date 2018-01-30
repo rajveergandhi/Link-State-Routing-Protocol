@@ -115,7 +115,7 @@ public class Router {
           //output neighbors
           processNeighbors();
         } else {
-          //invalid command
+            System.out.println("Command not recognized.");
           break;
         }
         System.out.print(">> ");
