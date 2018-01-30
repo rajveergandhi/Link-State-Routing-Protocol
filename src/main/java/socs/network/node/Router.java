@@ -51,6 +51,39 @@ public class Router {
   private void processAttach(String processIP, short processPort,
                              String simulatedIP, short weight) {
 
+      for (int i = 0; i < ports.length; ++i) {
+          if (ports[i] != null) {
+              if (ports[i].router1.simulatedIPAddress.equals(simulatedIP)) {
+                  // router1 cannot be this router instance
+                  System.err.println("Error: router1's simulated IP is the same as the current router");
+                  return;
+              }
+              else if (ports[i].router2.simulatedIPAddress.equals(simulatedIP)) {
+                  // router2 is already attached to this router instance
+                  System.err.println("Error: The given router is already attached to this router");
+                  return;
+              }
+              else {
+                  ++i;
+              }
+          }
+          else { // there is an available entry in the ports array
+
+              // create a new RouterDescription instance for the router being attached at the other end of the Link
+              RouterDescription r2 = new RouterDescription();
+              r2.processIPAddress = processIP;
+              r2.processPortNumber = processPort;
+              r2.simulatedIPAddress = simulatedIP;
+              r2.status = null; //no initialization to begin with
+
+              ports[i] = new Link(rd, r2);
+              System.out.println("Successfully attached link");
+              return;
+          }
+      }
+
+      // ports array is full
+      System.err.println("Error: no free ports available for this router");
   }
 
   /**
