@@ -1,4 +1,9 @@
 package socs.network.node;
+import socs.network.message.SOSPFPacket;
+import java.io.ObjectOutputStream;
+import java.net.Socket;
+import java.io.*;
+import java.net.*;
 
 import socs.network.util.Configuration;
 
@@ -10,14 +15,28 @@ public class Router {
 
   protected LinkStateDatabase lsd;
 
-  RouterDescription rd = new RouterDescription();
+  public RouterDescription rd = new RouterDescription();
+
+  //private ServerSocket serverSocket;
 
   //assuming that all routers are with 4 ports
   Link[] ports = new Link[4];
 
   public Router(Configuration config) {
+
+    // get simulated IP and port number from config
     rd.simulatedIPAddress = config.getString("socs.network.router.ip");
+    rd.processPortNumber = config.getShort("socs.network.router.port");
+
+    //hardcoded to localhost since in this simulation, all router instances are run on the same machine
+    rd.processIPAddress = "127.0.0.1";
+
+    // initialize link state database
     lsd = new LinkStateDatabase(rd);
+
+    //serverSocket = new ServerSocket(rd.processPortNumber);
+    //serverThread = new ServerThread(serverSocket, this); 
+    //serverThread.start();
   }
 
   /**
@@ -89,8 +108,31 @@ public class Router {
   /**
    * broadcast Hello to neighbors
    */
-  private void processStart() {
+  private void processStart() throws UnknownHostException, IOException {
 
+    for (int i = 0; i < ports.length; ++i) {
+
+        if (ports[i] != null) {
+
+            // create and initialize the packet for broadcast
+            SOSPFPacket cPacket = new SOSPFPacket();
+            cPacket.srcProcessIP = rd.processIPAddress;
+            cPacket.srcProcessPort = rd.processPortNumber;
+            cPacket.srcIP = rd.simulatedIPAddress;
+            cPacket.dstIP = ports[i].router2.simulatedIPAddress;
+            cPacket.sospfType = 0; // HELLO
+            cPacket.routerID = rd.simulatedIPAddress;
+            cPacket.neighborID = rd.simulatedIPAddress;
+
+            // send packet to the server
+            Socket client = new Socket(ports[i].router2.processIPAddress, ports[i].router2.processPortNumber);
+            ObjectOutputStream outToServer = new ObjectOutputStream(client.getOutputStream());
+            outToServer.writeObject(cPacket);
+
+            // close socket
+            client.close();
+        }
+    }
   }
 
   /**
