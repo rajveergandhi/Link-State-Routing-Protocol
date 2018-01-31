@@ -11,18 +11,20 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
 
+
 public class Router {
 
   protected LinkStateDatabase lsd;
 
   public RouterDescription rd = new RouterDescription();
 
-  //private ServerSocket serverSocket;
+  public ServerSocket serverSocket;
+  public ServerThread serverThread;
 
   //assuming that all routers are with 4 ports
   Link[] ports = new Link[4];
 
-  public Router(Configuration config) {
+  public Router(Configuration config) throws IOException {
 
     // get simulated IP and port number from config
     rd.simulatedIPAddress = config.getString("socs.network.router.ip");
@@ -34,9 +36,11 @@ public class Router {
     // initialize link state database
     lsd = new LinkStateDatabase(rd);
 
-    //serverSocket = new ServerSocket(rd.processPortNumber);
-    //serverThread = new ServerThread(serverSocket, this); 
-    //serverThread.start();
+    // initialize main server socket and main server thread, and start() it
+    serverSocket = new ServerSocket(rd.processPortNumber);
+    serverThread = new ServerThread(serverSocket, this); 
+    serverThread.start();
+
   }
 
   /**
