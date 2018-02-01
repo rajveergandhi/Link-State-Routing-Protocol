@@ -116,7 +116,7 @@ public class Router {
   /**
    * broadcast Hello to neighbors
    */
-  private void processStart() throws UnknownHostException, IOException {
+  private void processStart() throws UnknownHostException, IOException, ClassNotFoundException {
 
     for (int i = 0; i < ports.length; ++i) {
 
@@ -136,6 +136,19 @@ public class Router {
             Socket client = new Socket(ports[i].router2.processIPAddress, ports[i].router2.processPortNumber);
             ObjectOutputStream outToServer = new ObjectOutputStream(client.getOutputStream());
             outToServer.writeObject(cPacket);
+
+            //if router1 received hello from router2 after sending hello to router2
+            ObjectInputStream inFromServer = new ObjectInputStream(client.getInputStream());
+            SOSPFPacket ServerPacket = (SOSPFPacket) inFromServer.readObject();
+            if(ServerPacket.sospfType==0) {
+                System.out.println("received Hello from " + ServerPacket.neighborID);
+                //set status of router2 as TWO_WAY
+                ports[i].router2.status = RouterStatus.TWO_WAY;
+                System.out.println("set " + ports[i].router2.simulatedIPAddress + " state to TWO_WAY.\n");
+                //send hello back to router2
+                ObjectOutputStream returnHello = new ObjectOutputStream(client.getOutputStream());
+                returnHello.writeObject(cPacket);
+            }
 
             // close socket
             client.close();
