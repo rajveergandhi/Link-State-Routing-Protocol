@@ -36,14 +36,10 @@ public class Router {
     // initialize link state database
     lsd = new LinkStateDatabase(rd);
 
-    try {
-        // initialize main server socket and main server thread, and start() it
-        serverSocket = new ServerSocket(rd.processPortNumber);
-        serverThread = new ServerThread(serverSocket, this); 
-        serverThread.start();
-    }
-    catch (IOException e){
-    }
+    // initialize main server socket and main server thread, and start() it
+    serverSocket = new ServerSocket(rd.processPortNumber);
+    serverThread = new ServerThread(serverSocket, this); 
+    serverThread.start();
 
   }
 
@@ -120,7 +116,8 @@ public class Router {
 
     for (int i = 0; i < ports.length; ++i) {
 
-        if (ports[i] != null) {
+        // broadcast to all routers that have not already been synced (that are not already TWO_WAY)
+        if (ports[i] != null && ports[i].router2.status != RouterStatus.TWO_WAY) {
 
             // create and initialize the packet for broadcast
             SOSPFPacket cPacket = new SOSPFPacket();
@@ -137,17 +134,18 @@ public class Router {
             ObjectOutputStream outToServer = new ObjectOutputStream(client.getOutputStream());
             outToServer.writeObject(cPacket);
 
-            //if router1 received hello from router2 after sending hello to router2
+            // wait for reply from the router we just initiated sync with
             ObjectInputStream inFromServer = new ObjectInputStream(client.getInputStream());
-            SOSPFPacket ServerPacket = (SOSPFPacket) inFromServer.readObject();
-            if(ServerPacket.sospfType==0) {
-                System.out.println("received Hello from " + ServerPacket.neighborID);
-                //set status of router2 as TWO_WAY
+            SOSPFPacket packet = (SOSPFPacket) inFromServer.readObject();
+            if(packet.sospfType == 0) {
+
+                // set status to TWO_WAY
+                System.out.println("received HELLO from " + packet.neighborID + ";");
                 ports[i].router2.status = RouterStatus.TWO_WAY;
-                System.out.println("set " + ports[i].router2.simulatedIPAddress + " state to TWO_WAY.\n");
-                //send hello back to router2
-                ObjectOutputStream returnHello = new ObjectOutputStream(client.getOutputStream());
-                returnHello.writeObject(cPacket);
+                System.out.println("set " + ports[i].router2.simulatedIPAddress + " state to TWO_WAY;");
+
+                // reply with HELLO for the sync
+                outToServer.writeObject(cPacket);
             }
 
             // close socket
