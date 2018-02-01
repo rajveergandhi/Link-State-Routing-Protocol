@@ -86,9 +86,6 @@ public class Router {
                   System.err.println("Error: The given router is already attached to this router");
                   return;
               }
-              else {
-                  ++i;
-              }
           }
           else { // there is an available entry in the ports array
 
@@ -97,7 +94,7 @@ public class Router {
               r2.processIPAddress = processIP;
               r2.processPortNumber = processPort;
               r2.simulatedIPAddress = simulatedIP;
-              r2.status = null; //no initialization to begin with
+              r2.status = RouterStatus.INIT; // initialize to INIT
 
               ports[i] = new Link(rd, r2);
               System.out.println("Successfully attached link");

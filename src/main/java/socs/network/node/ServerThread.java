@@ -14,6 +14,7 @@ public class ServerThread extends Thread {
 	}
 
 	public void run() {
+        // keep running in a loop to accept new connections
 	    while(true){
             try {
                 Socket subSocket = socket.accept();
