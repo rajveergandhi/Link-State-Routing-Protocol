@@ -36,10 +36,14 @@ public class Router {
     // initialize link state database
     lsd = new LinkStateDatabase(rd);
 
-    // initialize main server socket and main server thread, and start() it
-    serverSocket = new ServerSocket(rd.processPortNumber);
-    serverThread = new ServerThread(serverSocket, this); 
-    serverThread.start();
+    try {
+        // initialize main server socket and main server thread, and start() it
+        serverSocket = new ServerSocket(rd.processPortNumber);
+        serverThread = new ServerThread(serverSocket, this); 
+        serverThread.start();
+    }
+    catch (IOException e){
+    }
 
   }
 
