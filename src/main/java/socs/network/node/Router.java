@@ -15,11 +15,9 @@ import java.io.InputStreamReader;
 public class Router {
 
   protected LinkStateDatabase lsd;
-
   public RouterDescription rd = new RouterDescription();
-
-  public ServerSocket serverSocket;
   public ServerThread serverThread;
+  public ServerSocket serverSocket;
 
   //assuming that all routers are with 4 ports
   Link[] ports = new Link[4];
@@ -109,7 +107,7 @@ public class Router {
   /**
    * broadcast Hello to neighbors
    */
-  private void processStart() throws UnknownHostException, IOException, ClassNotFoundException {
+  private void processStart() throws ClassNotFoundException, UnknownHostException, IOException {
 
     for (int i = 0; i < ports.length; ++i) {
 
