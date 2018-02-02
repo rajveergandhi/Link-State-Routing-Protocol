@@ -7,7 +7,8 @@ import java.net.Socket;
 
 import socs.network.message.SOSPFPacket;
 
-public class ServerThreadBranch extends Thread{
+public class ServerThreadBranch implements Runnable{
+    private Thread t;
 	public Socket socket;
 	public Router router;
 	
@@ -74,4 +75,10 @@ public class ServerThreadBranch extends Thread{
             c.printStackTrace();
         }
 	}
+	public void start() {
+	    if(t==null) {
+	        t = new Thread(this);
+	        t.start();
+        }
+    }
 }

@@ -3,8 +3,8 @@ import java.net.Socket;
 import java.net.ServerSocket;
 import java.io.IOException;
 
-public class ServerThread extends Thread {
-
+public class ServerThread implements Runnable {
+    private Thread t;
 	private Router router;
 	private ServerSocket socket;
 	
@@ -27,4 +27,10 @@ public class ServerThread extends Thread {
             }
 	    }
 	}
+	public void start() {
+	    if (t==null) {
+	        t = new Thread(this);
+	        t.start();
+        }
+    }
 }
