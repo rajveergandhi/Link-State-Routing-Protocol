@@ -158,7 +158,11 @@ public class Router {
             linkDB.linkID = ports[i].router2.simulatedIPAddress;
             linkDB.portNum = i;
             linkDB.tosMetrics = ports[i].weight;
-            lsd.addLinkLSA(rd.simulatedIPAddress, linkDB);
+
+            // add link to LSA
+            LSA lsa = lsd._store.get(rd.simulatedIPAddress);
+            lsa.lsaSeqNumber++;
+            lsa.links.add(linkDB);
         }
     }
     LSAUPDATE();
