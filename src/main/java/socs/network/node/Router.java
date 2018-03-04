@@ -1,4 +1,5 @@
 package socs.network.node;
+import socs.network.message.LinkDescription;
 import socs.network.message.SOSPFPacket;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
@@ -52,8 +53,9 @@ public class Router {
       if (destinationIP.equals(rd.simulatedIPAddress)) {
           //Distance 0
       }
-      else
+      else {
           //shortest path
+      }
   }
 
   /**
@@ -63,7 +65,7 @@ public class Router {
    * @param portNumber the port number which the link attaches at
    */
   private void processDisconnect(short portNumber) {
-      
+
   }
 
   /**
@@ -98,7 +100,7 @@ public class Router {
               r2.simulatedIPAddress = simulatedIP;
               r2.status = RouterStatus.INIT; // initialize to INIT
 
-              ports[i] = new Link(rd, r2);
+              ports[i] = new Link(rd, r2, weight);
               System.out.println("Successfully attached link");
               return;
           }
@@ -127,7 +129,7 @@ public class Router {
             cPacket.sospfType = 0; // HELLO
             cPacket.routerID = rd.simulatedIPAddress;
             cPacket.neighborID = rd.simulatedIPAddress;
-
+            cPacket.weight = ports[i].weight;
             // send packet to the server
             Socket client = new Socket(ports[i].router2.processIPAddress, ports[i].router2.processPortNumber);
             ObjectOutputStream outToServer = new ObjectOutputStream(client.getOutputStream());
@@ -149,8 +151,16 @@ public class Router {
 
             // close socket
             client.close();
+
+            // link state database
+            LinkDescription linkDB = new LinkDescription();
+            linkDB.linkID = ports[i].router2.simulatedIPAddress;
+            linkDB.portNum = i;
+            linkDB.tosMetrics = ports[i].weight;
+            lsd.addLinkLSA(rd.simulatedIPAddress, linkDB);
         }
     }
+    LSAUPDATE();
   }
 
   /**

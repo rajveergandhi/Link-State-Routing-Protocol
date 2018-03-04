@@ -60,7 +60,7 @@ public class ServerThreadBranch implements Runnable{
                     // finally, add the synced router to the ports[] array for this router
                     for (int i = 0; i < router.ports.length; ++i) {
                         if (router.ports[i] == null) {
-                            router.ports[i] = new Link(router.rd, r2);
+                            router.ports[i] = new Link(router.rd, r2, packet.weight);
                             break;
                         }
                     }
