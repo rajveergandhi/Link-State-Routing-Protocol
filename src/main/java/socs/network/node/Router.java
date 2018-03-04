@@ -49,7 +49,11 @@ public class Router {
    * @param destinationIP the ip adderss of the destination simulated router
    */
   private void processDetect(String destinationIP) {
-
+      if (destinationIP.equals(rd.simulatedIPAddress)) {
+          //Distance 0
+      }
+      else
+          //shortest path
   }
 
   /**
@@ -59,7 +63,7 @@ public class Router {
    * @param portNumber the port number which the link attaches at
    */
   private void processDisconnect(short portNumber) {
-
+      
   }
 
   /**
