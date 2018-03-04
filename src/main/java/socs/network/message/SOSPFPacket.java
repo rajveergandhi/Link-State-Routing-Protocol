@@ -23,6 +23,9 @@ public class SOSPFPacket implements Serializable {
   //simulated IP address
   public String neighborID; //neighbor's simulated IP address
 
+  //weight of the link
+  public int weight;
+
   //used by LSAUPDATE
   public Vector<LSA> lsaArray = null;
 
