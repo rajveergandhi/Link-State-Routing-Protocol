@@ -1,4 +1,5 @@
 package socs.network.node;
+import socs.network.message.LSA;
 import socs.network.message.LinkDescription;
 import socs.network.message.SOSPFPacket;
 import java.io.ObjectOutputStream;
@@ -10,7 +11,7 @@ import socs.network.util.Configuration;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-
+import java.util.Vector;
 
 
 public class Router {
@@ -161,6 +162,30 @@ public class Router {
         }
     }
     LSAUPDATE();
+  }
+
+  public void LSAUPDATE() throws IOException {
+      for (int i = 0; i<ports.length; ++i) {
+          if (ports[i] != null && ports[i].router2.status == RouterStatus.TWO_WAY) {
+              Socket client = new Socket(ports[i].router2.processIPAddress, ports[i].router2.processPortNumber);
+              SOSPFPacket packet = new SOSPFPacket();
+              packet.srcProcessIP = rd.processIPAddress;
+              packet.srcProcessPort = rd.processPortNumber;
+              packet.srcIP = rd.simulatedIPAddress;
+              packet.dstIP = ports[i].router2.simulatedIPAddress;
+              packet.sospfType = 1;
+              packet.routerID = rd.simulatedIPAddress;
+              packet.neighborID = rd.simulatedIPAddress;
+              packet.lsaArray = new Vector<LSA>();
+              for (LSA lsa: lsd._store.values()) {
+                  packet.lsaArray.addElement(lsa);
+              }
+              ObjectOutputStream outToServer = new ObjectOutputStream(client.getOutputStream());
+              System.out.println("sending LSAUPDATE to neighbor: " + packet.dstIP);
+              outToServer.writeObject(packet);
+              client.close();
+          }
+      }
   }
 
   /**
