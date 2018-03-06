@@ -199,6 +199,7 @@ public class ServerThreadBranch implements Runnable{
                         }
                     }
                 }
+                socket.close();
             }
         }
 		catch (IOException e) {
@@ -207,7 +208,7 @@ public class ServerThreadBranch implements Runnable{
 		catch (ClassNotFoundException c) {
             c.printStackTrace();
         }
-
+        System.out.print(">> ");
 	}
 	public void start() {
 	    if(t==null) {

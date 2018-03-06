@@ -219,7 +219,7 @@ public class Router {
    * disconnect with all neighbors and quit the program
    */
   private void processQuit() {
-
+    System.exit(0);
   }
 
   public void terminal() {

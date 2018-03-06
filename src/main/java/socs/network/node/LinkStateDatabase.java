@@ -54,9 +54,8 @@ public class LinkStateDatabase {
       }
       System.out.print(rd.simulatedIPAddress);
       for (LinkDescription ld: shortestPath) {
-        System.out.print(" ->(" + ld.tosMetrics + ")" + ld.linkID);
+        System.out.print(" ->(" + ld.tosMetrics + ") " + ld.linkID);
       }
-      System.out.println();
     }
     return "";
   }
