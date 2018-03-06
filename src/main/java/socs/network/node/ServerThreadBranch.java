@@ -1,11 +1,15 @@
 package socs.network.node;
 
+import java.util.Enumeration;
+import java.util.Vector;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 
 import socs.network.message.SOSPFPacket;
+
+import socs.network.message.*;
 
 public class ServerThreadBranch implements Runnable{
     private Thread t;
@@ -20,8 +24,8 @@ public class ServerThreadBranch implements Runnable{
 	public void run() {
 		try {
             ObjectInputStream inStream = new ObjectInputStream(socket.getInputStream());
-			SOSPFPacket packet = (SOSPFPacket) inStream.readObject();
-			if (packet.sospfType == 0) {
+            SOSPFPacket packet = (SOSPFPacket) inStream.readObject();
+            if (packet.sospfType == 0) {
 
                 System.out.println("received HELLO from " + packet.neighborID + ";");
 
@@ -47,10 +51,10 @@ public class ServerThreadBranch implements Runnable{
                 // reply with HELLO for the sync
                 ObjectOutputStream outToServer = new ObjectOutputStream(socket.getOutputStream());
                 outToServer.writeObject(sPacket);
-                
+
                 // receive the second HELLO
                 packet = (SOSPFPacket) inStream.readObject();
-                if(packet.sospfType == 0) {
+                if (packet.sospfType == 0) {
                     System.out.println("received HELLO from " + packet.neighborID + ";");
 
                     // set status to TWO_WAY
@@ -65,8 +69,137 @@ public class ServerThreadBranch implements Runnable{
                         }
                     }
                 }
+                socket.close();
             }
-            socket.close();
+            else if (packet.sospfType == 1) {
+                System.out.println("received LSA update from " + packet.routerID);
+                boolean update = false;
+                boolean updateNeighbor = false;
+                boolean removeNeighbor = false;
+                int neighbor = 0;
+                LSA neighbor_lsa = null;
+                LinkDescription ld = null;
+                LinkDescription neighbor_ld = null;
+                int weight = 0;
+
+                for (Enumeration<LSA> lsa = packet.lsaArray.elements(); lsa.hasMoreElements(); ) {
+                    LSA new_lsa = (LSA) lsa.nextElement();
+
+                    if (router.lsd._store.get(new_lsa.linkStateID) != null) {
+                        LSA old_lsa = router.lsd._store.get(new_lsa.linkStateID);
+                        if (old_lsa.lsaSeqNumber < new_lsa.lsaSeqNumber) {
+                            update = true;
+                            router.lsd._store.remove(old_lsa.linkStateID);
+                            router.lsd._store.put(new_lsa.linkStateID, new_lsa);
+                            for (int i = 0; i < 4; i++) {
+                                if(router.ports[i] != null && router.ports[i].router2.simulatedIPAddress.equals(new_lsa.linkStateID) && router.ports[i].router2.status == RouterStatus.TWO_WAY) {
+                                    for (LinkDescription l: new_lsa.links) {
+                                        if (l.linkID.equals(router.rd.simulatedIPAddress)) {
+                                            ld = l;
+                                        }
+                                    }
+                                    if (ld != null) {
+                                        updateNeighbor = true;
+                                        neighbor_lsa = new_lsa;
+                                        neighbor = i;
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    else {
+                        update = true;
+                        router.lsd._store.put(new_lsa.linkStateID, new_lsa);
+                        for (int i = 0; i < 4; i++) {
+                            if (router.ports[i] != null && router.ports[i].router2.simulatedIPAddress.equals(new_lsa.linkStateID) && router.ports[i].router2.status == RouterStatus.TWO_WAY) {
+                                for (LinkDescription l: new_lsa.links) {
+                                    if (l.linkID.equals(router.rd.simulatedIPAddress)) {
+                                        ld = l;
+                                    }
+                                }
+                                if(ld != null){
+                                    updateNeighbor = true;
+                                    neighbor_lsa = new_lsa;
+                                    neighbor = i;
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (update) {
+                    for (int i = 0; i < router.ports.length; i++) {
+                        if (router.ports[i] != null && router.ports[i].router2.simulatedIPAddress.equals(packet.routerID) == false && router.ports[i].router2.status == RouterStatus.TWO_WAY) {
+                            Socket client = new Socket(router.ports[i].router2.processIPAddress, router.ports[i].router2.processPortNumber);
+                            SOSPFPacket sPacket = new SOSPFPacket();
+                            sPacket.sospfType = 1;
+                            sPacket.srcProcessIP = router.rd.processIPAddress;
+                            sPacket.srcProcessPort = router.rd.processPortNumber;
+                            sPacket.srcIP = router.rd.simulatedIPAddress;
+                            sPacket.dstIP = router.ports[i].router2.simulatedIPAddress;
+                            sPacket.routerID = router.rd.simulatedIPAddress;
+                            sPacket.neighborID = router.rd.simulatedIPAddress;
+                            sPacket.lsaArray = new Vector<LSA>();
+                            for (LSA update_lsa: router.lsd._store.values()) {
+                                sPacket.lsaArray.addElement(update_lsa);
+                            }
+                            ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
+                            System.out.println("sending LSAUPDATE to " + sPacket.dstIP);
+                            out.writeObject(sPacket);
+                            client.close();
+                        }
+                    }
+                }
+
+                if (updateNeighbor) {
+                    LSA own_lsa = router.lsd._store.get(router.rd.simulatedIPAddress);
+                    for (LinkDescription l: own_lsa.links) {
+                        if (l.linkID.equals(router.rd.simulatedIPAddress)) {
+                            ld = l;
+                        }
+                    }
+                    if (ld == null) {
+                        ld = new LinkDescription();
+
+                        ld.linkID = neighbor_lsa.linkStateID;
+                        ld.portNum = neighbor;
+                        for (LinkDescription l: neighbor_lsa.links) {
+                            if (l.linkID.equals(router.rd.simulatedIPAddress)) {
+                                neighbor_ld = l;
+                            }
+                        }
+                        weight = neighbor_ld.tosMetrics;
+                        ld.tosMetrics = weight;
+                        router.ports[neighbor].weight = weight;
+                        LSA lsa = router.lsd._store.get(router.rd.simulatedIPAddress);
+                        lsa.lsaSeqNumber ++;
+                        lsa.links.add(ld);
+                    }
+                    for (int i = 0; i < router.ports.length; i++) {
+                        if (router.ports[i] != null && router.ports[i].router2.status == RouterStatus.TWO_WAY) {
+                            Socket client = new Socket(router.ports[i].router2.processIPAddress, router.ports[i].router2.processPortNumber);
+                            SOSPFPacket cPacket = new SOSPFPacket();
+                            cPacket.sospfType = 1;
+                            cPacket.srcProcessIP = router.rd.processIPAddress;
+                            cPacket.srcProcessPort = router.rd.processPortNumber;
+                            cPacket.srcIP = router.rd.simulatedIPAddress;
+                            cPacket.dstIP = router.ports[i].router2.simulatedIPAddress;
+                            cPacket.routerID = router.rd.simulatedIPAddress;
+                            cPacket.neighborID = router.rd.simulatedIPAddress;
+                            cPacket.lsaArray = new Vector<LSA>();
+                            for (LSA update_lsa: router.lsd._store.values()) {
+                                cPacket.lsaArray.addElement(update_lsa);
+                            }
+                            ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
+                            System.out.println("sending LSAUPDATE to " + cPacket.dstIP);
+                            out.writeObject(cPacket);
+                            client.close();
+                        }
+                    }
+                }
+            }
         }
 		catch (IOException e) {
             e.printStackTrace();
@@ -74,6 +207,7 @@ public class ServerThreadBranch implements Runnable{
 		catch (ClassNotFoundException c) {
             c.printStackTrace();
         }
+
 	}
 	public void start() {
 	    if(t==null) {

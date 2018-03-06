@@ -2,20 +2,20 @@ package socs.network.node;
 
 public class Graph {
     private int[][] edges;
-    private Object[] labels;
+    private String[] labels;
 
     public Graph(int n) {
         edges = new int[n][n];
-        labels = new Object[n];
+        labels = new String[n];
     }
 
     public int size() {
         return labels.length;
     }
-    public void setLabel(int vertex, Object label) {
+    public void setLabel(int vertex, String label) {
         labels[vertex] = label;
     }
-    public Object getLabel(int vertex) {
+    public String getLabel(int vertex) {
         return labels[vertex];
     }
 
@@ -38,6 +38,18 @@ public class Graph {
     }
     public int getWeight(int src, int dst) {
         return edges[src][dst];
+    }
+
+    public int getLowestDistance(int[] distance, boolean[] visited) {
+        int min = Integer.MAX_VALUE;
+        int destination = -1;
+        for (int i = 0; i < distance.length; i++) {
+            if ((visited[i] == false) && (distance[i] < min)) {
+                destination = i;
+                min = distance[i];
+            }
+        }
+        return destination;
     }
 
     public int[] neighbors(int vertex) {

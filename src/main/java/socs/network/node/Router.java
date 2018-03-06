@@ -52,10 +52,10 @@ public class Router {
    */
   private void processDetect(String destinationIP) {
       if (destinationIP.equals(rd.simulatedIPAddress)) {
-          //Distance 0
+          System.out.println("Distance to self: 0");
       }
       else {
-          //shortest path
+          System.out.println(lsd.getShortestPath(destinationIP));
       }
   }
 
