@@ -165,6 +165,7 @@ public class Router {
             lsa.links.add(linkDB);
         }
     }
+    // broadcast LSAUPDATE which contain the latest information of link state to all neighbors. sospfTYPE = 1;
     LSAUPDATE();
   }
 

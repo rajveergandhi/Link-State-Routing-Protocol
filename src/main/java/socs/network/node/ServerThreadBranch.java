@@ -91,6 +91,7 @@ public class ServerThreadBranch implements Runnable{
                             update = true;
                             router.lsd._store.remove(old_lsa.linkStateID);
                             router.lsd._store.put(new_lsa.linkStateID, new_lsa);
+
                             for (int i = 0; i < 4; i++) {
                                 if(router.ports[i] != null && router.ports[i].router2.simulatedIPAddress.equals(new_lsa.linkStateID) && router.ports[i].router2.status == RouterStatus.TWO_WAY) {
                                     for (LinkDescription l: new_lsa.links) {
@@ -106,6 +107,7 @@ public class ServerThreadBranch implements Runnable{
                                     break;
                                 }
                             }
+
                         }
                     }
                     else {
