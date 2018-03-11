@@ -24,7 +24,6 @@ public class LinkStateDatabase {
    * output the shortest path from this router to the destination with the given IP address
    */
   String getShortestPath(String destinationIP) {
-    //TODO: fill the implementation here
     Graph graph = new Graph(_store.size());
     int vertex = 0;
     for (LSA lsa: _store.values()) {
@@ -77,10 +76,10 @@ public class LinkStateDatabase {
   public int[] Dijikstra(Graph g) {
     int s = g.getVertex(rd.simulatedIPAddress);
     int[] distance = new int[_store.size()];
-    int[] prev = new int[_store.size()];
-    for(int i = 0; i < prev.length; i++)
-      prev[i] = -1;
-    boolean[] visited = new boolean[_store.size()];
+    int[] p_node = new int[_store.size()];
+    for(int i = 0; i < p_node.length; i++)
+      p_node[i] = -1;
+    boolean[] settled = new boolean[_store.size()];
     for (int i = 0; i < distance.length; i++)
       // all nodes initialized with max value to simulate
       // an infinite distance in the initialization step
@@ -88,22 +87,22 @@ public class LinkStateDatabase {
     // source distance = 0
     distance[s] = 0;
     for (int i = 0; i < distance.length; i++) {
-      // returns the node with the lowest distance from nodes not visited.
-      int next = g.getLowestDistance(distance, visited);
+      // returns the node with the lowest distance from nodes not settled (visited)
+      int next = g.getLowestDistance(distance, settled);
       if (next == -1)
-        return prev;
-      visited[next] = true;
-      int[] neighbors = g.neighbors(next);
-      for (int j = 0; j < neighbors.length; j++) {
-        int node = neighbors[j];
-        int distanceToNext = distance[next] + g.getWeight(next, node);
-        if(distance[node] > distanceToNext) {
-          distance[node] = distanceToNext;
-          prev[node] = next;
+        return p_node;
+      settled[next] = true;
+      int[] curr_neighbors = g.neighbors(next);
+      for (int j = 0; j < curr_neighbors.length; j++) {
+        int vertex = curr_neighbors[j];
+        int distanceToNext = distance[next] + g.getWeight(next, vertex);
+        if(distance[vertex] > distanceToNext) {
+          distance[vertex] = distanceToNext;
+          p_node[vertex] = next;
         }
       }
     }
-    return prev;
+    return p_node;
   }
 
   public String toString() {
