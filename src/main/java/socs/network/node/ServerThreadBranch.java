@@ -86,10 +86,10 @@ public class ServerThreadBranch implements Runnable{
                     LSA next_lsa = (LSA) lsa_iterator.next();
 
                     if (router.lsd._store.get(next_lsa.linkStateID) != null) {
-                        LSA old_lsa = router.lsd._store.get(next_lsa.linkStateID);
-                        if (old_lsa.lsaSeqNumber < next_lsa.lsaSeqNumber) {
+                        LSA prev_lsa = router.lsd._store.get(next_lsa.linkStateID);
+                        if (prev_lsa.lsaSeqNumber < next_lsa.lsaSeqNumber) {
                             sendPacket = true;
-                            router.lsd._store.remove(old_lsa.linkStateID);
+                            router.lsd._store.remove(prev_lsa.linkStateID);
                             router.lsd._store.put(next_lsa.linkStateID, next_lsa);
 
                             for (int i = 0; i < router.ports.length; i++) {
