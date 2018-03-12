@@ -75,6 +75,7 @@ public class ServerThreadBranch implements Runnable{
             else if (packet.sospfType == 1) {
                 boolean sendPacket = false;
                 boolean sendToNeighbor = false;
+                boolean addLinkToLSA = false;
                 int neighbor = 0;
                 LSA neighbor_lsa = null;
                 LinkDescription ld = null;
@@ -88,31 +89,15 @@ public class ServerThreadBranch implements Runnable{
                     if (router.lsd._store.get(next_lsa.linkStateID) != null) {
                         LSA prev_lsa = router.lsd._store.get(next_lsa.linkStateID);
                         if (prev_lsa.lsaSeqNumber < next_lsa.lsaSeqNumber) {
-                            sendPacket = true;
                             router.lsd._store.remove(prev_lsa.linkStateID);
-                            router.lsd._store.put(next_lsa.linkStateID, next_lsa);
-
-                            for (int i = 0; i < router.ports.length; i++) {
-                                // add new link to the lsa, which orginated at the server end
-                                if(router.ports[i] != null && router.ports[i].router2.simulatedIPAddress.equals(next_lsa.linkStateID) && router.ports[i].router2.status == RouterStatus.TWO_WAY) {
-                                    for (LinkDescription l: next_lsa.links)
-                                        if (l.linkID.equals(router.rd.simulatedIPAddress))
-                                            ld = l;
-                                    if (ld != null) {
-                                        sendToNeighbor = true;
-                                        neighbor_lsa = next_lsa;
-                                        neighbor = i;
-                                    }
-                                    break;
-                                }
-                            }
-
+                            addLinkToLSA = true;
                         }
                     }
-                    else {
+                    if ((router.lsd._store.get(next_lsa.linkStateID) == null) || addLinkToLSA ) {
                         sendPacket = true;
                         router.lsd._store.put(next_lsa.linkStateID, next_lsa);
                         for (int i = 0; i < router.ports.length; i++) {
+                                // add new link to the lsa, which orginated at the server end
                             if (router.ports[i] != null && router.ports[i].router2.simulatedIPAddress.equals(next_lsa.linkStateID) && router.ports[i].router2.status == RouterStatus.TWO_WAY) {
                                 for (LinkDescription l: next_lsa.links)
                                     if (l.linkID.equals(router.rd.simulatedIPAddress))
