@@ -43,11 +43,11 @@ public class LinkStateDatabase {
       List<LinkDescription> shortestPath = new ArrayList<LinkDescription>();
       int nextDst = prev[dst];
 
-      while (dst != src) {
-        LinkDescription newLink = new LinkDescription();
-        newLink.linkID = graph.getLabel(dst);
-        newLink.tosMetrics = graph.getWeight(nextDst, dst);
-        shortestPath.add(0, newLink);
+      while (src != dst) {
+        LinkDescription ld = new LinkDescription();
+        ld.linkID = graph.getLabel(dst);
+        ld.tosMetrics = graph.getWeight(nextDst, dst);
+        shortestPath.add(0, ld);
         dst = nextDst;
         nextDst = prev[nextDst];
       }
@@ -102,6 +102,8 @@ public class LinkStateDatabase {
         }
       }
     }
+    //for (int i = 0; i < p_node.length; ++i)
+        //System.out.println(p_node[i] + " ");
     return p_node;
   }
 

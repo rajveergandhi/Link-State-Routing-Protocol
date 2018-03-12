@@ -1,6 +1,7 @@
 package socs.network.node;
 
 import java.util.Enumeration;
+import java.util.Iterator;
 import java.util.Vector;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -72,36 +73,34 @@ public class ServerThreadBranch implements Runnable{
                 socket.close();
             }
             else if (packet.sospfType == 1) {
-                System.out.println("received LSA update from " + packet.routerID);
-                boolean update = false;
-                boolean updateNeighbor = false;
-                boolean removeNeighbor = false;
+                boolean sendPacket = false;
+                boolean sendToNeighbor = false;
                 int neighbor = 0;
                 LSA neighbor_lsa = null;
                 LinkDescription ld = null;
                 LinkDescription neighbor_ld = null;
                 int weight = 0;
 
-                for (Enumeration<LSA> lsa = packet.lsaArray.elements(); lsa.hasMoreElements(); ) {
-                    LSA new_lsa = (LSA) lsa.nextElement();
+                Iterator lsa_iterator = packet.lsaArray.iterator();
+                while (lsa_iterator.hasNext()) {
+                    LSA next_lsa = (LSA) lsa_iterator.next();
 
-                    if (router.lsd._store.get(new_lsa.linkStateID) != null) {
-                        LSA old_lsa = router.lsd._store.get(new_lsa.linkStateID);
-                        if (old_lsa.lsaSeqNumber < new_lsa.lsaSeqNumber) {
-                            update = true;
+                    if (router.lsd._store.get(next_lsa.linkStateID) != null) {
+                        LSA old_lsa = router.lsd._store.get(next_lsa.linkStateID);
+                        if (old_lsa.lsaSeqNumber < next_lsa.lsaSeqNumber) {
+                            sendPacket = true;
                             router.lsd._store.remove(old_lsa.linkStateID);
-                            router.lsd._store.put(new_lsa.linkStateID, new_lsa);
+                            router.lsd._store.put(next_lsa.linkStateID, next_lsa);
 
-                            for (int i = 0; i < 4; i++) {
-                                if(router.ports[i] != null && router.ports[i].router2.simulatedIPAddress.equals(new_lsa.linkStateID) && router.ports[i].router2.status == RouterStatus.TWO_WAY) {
-                                    for (LinkDescription l: new_lsa.links) {
-                                        if (l.linkID.equals(router.rd.simulatedIPAddress)) {
+                            for (int i = 0; i < router.ports.length; i++) {
+                                // add new link to the lsa, which orginated at the server end
+                                if(router.ports[i] != null && router.ports[i].router2.simulatedIPAddress.equals(next_lsa.linkStateID) && router.ports[i].router2.status == RouterStatus.TWO_WAY) {
+                                    for (LinkDescription l: next_lsa.links)
+                                        if (l.linkID.equals(router.rd.simulatedIPAddress))
                                             ld = l;
-                                        }
-                                    }
                                     if (ld != null) {
-                                        updateNeighbor = true;
-                                        neighbor_lsa = new_lsa;
+                                        sendToNeighbor = true;
+                                        neighbor_lsa = next_lsa;
                                         neighbor = i;
                                     }
                                     break;
@@ -111,18 +110,16 @@ public class ServerThreadBranch implements Runnable{
                         }
                     }
                     else {
-                        update = true;
-                        router.lsd._store.put(new_lsa.linkStateID, new_lsa);
-                        for (int i = 0; i < 4; i++) {
-                            if (router.ports[i] != null && router.ports[i].router2.simulatedIPAddress.equals(new_lsa.linkStateID) && router.ports[i].router2.status == RouterStatus.TWO_WAY) {
-                                for (LinkDescription l: new_lsa.links) {
-                                    if (l.linkID.equals(router.rd.simulatedIPAddress)) {
+                        sendPacket = true;
+                        router.lsd._store.put(next_lsa.linkStateID, next_lsa);
+                        for (int i = 0; i < router.ports.length; i++) {
+                            if (router.ports[i] != null && router.ports[i].router2.simulatedIPAddress.equals(next_lsa.linkStateID) && router.ports[i].router2.status == RouterStatus.TWO_WAY) {
+                                for (LinkDescription l: next_lsa.links)
+                                    if (l.linkID.equals(router.rd.simulatedIPAddress))
                                         ld = l;
-                                    }
-                                }
-                                if(ld != null){
-                                    updateNeighbor = true;
-                                    neighbor_lsa = new_lsa;
+                                if (ld != null) {
+                                    sendToNeighbor = true;
+                                    neighbor_lsa = next_lsa;
                                     neighbor = i;
                                 }
                                 break;
@@ -131,7 +128,7 @@ public class ServerThreadBranch implements Runnable{
                     }
                 }
 
-                if (update) {
+                if (sendPacket) {
                     for (int i = 0; i < router.ports.length; i++) {
                         if (router.ports[i] != null && router.ports[i].router2.simulatedIPAddress.equals(packet.routerID) == false && router.ports[i].router2.status == RouterStatus.TWO_WAY) {
                             Socket client = new Socket(router.ports[i].router2.processIPAddress, router.ports[i].router2.processPortNumber);
@@ -148,16 +145,15 @@ public class ServerThreadBranch implements Runnable{
                                 sPacket.lsaArray.addElement(update_lsa);
                             }
                             ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
-                            System.out.println("sending LSAUPDATE to " + sPacket.dstIP);
                             out.writeObject(sPacket);
                             client.close();
                         }
                     }
                 }
 
-                if (updateNeighbor) {
-                    LSA own_lsa = router.lsd._store.get(router.rd.simulatedIPAddress);
-                    for (LinkDescription l: own_lsa.links) {
+                if (sendToNeighbor) {
+                    LSA this_lsa = router.lsd._store.get(router.rd.simulatedIPAddress);
+                    for (LinkDescription l: this_lsa.links) {
                         if (l.linkID.equals(router.rd.simulatedIPAddress)) {
                             ld = l;
                         }
@@ -176,7 +172,7 @@ public class ServerThreadBranch implements Runnable{
                         ld.tosMetrics = weight;
                         router.ports[neighbor].weight = weight;
                         LSA lsa = router.lsd._store.get(router.rd.simulatedIPAddress);
-                        lsa.lsaSeqNumber ++;
+                        lsa.lsaSeqNumber++;
                         lsa.links.add(ld);
                     }
                     for (int i = 0; i < router.ports.length; i++) {
@@ -195,7 +191,6 @@ public class ServerThreadBranch implements Runnable{
                                 cPacket.lsaArray.addElement(update_lsa);
                             }
                             ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
-                            System.out.println("sending LSAUPDATE to " + cPacket.dstIP);
                             out.writeObject(cPacket);
                             client.close();
                         }
@@ -210,12 +205,12 @@ public class ServerThreadBranch implements Runnable{
 		catch (ClassNotFoundException c) {
             c.printStackTrace();
         }
-        System.out.print(">> ");
 	}
 	public void start() {
 	    if(t==null) {
 	        t = new Thread(this);
 	        t.start();
+            System.out.print(">> ");
         }
     }
 }

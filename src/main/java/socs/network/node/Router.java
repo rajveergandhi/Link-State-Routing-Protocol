@@ -186,7 +186,6 @@ public class Router {
                   packet.lsaArray.addElement(lsa);
               }
               ObjectOutputStream outToServer = new ObjectOutputStream(client.getOutputStream());
-              System.out.println("sending LSAUPDATE to neighbor: " + packet.dstIP);
               outToServer.writeObject(packet);
               client.close();
           }
