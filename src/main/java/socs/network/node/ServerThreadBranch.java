@@ -1,6 +1,6 @@
 package socs.network.node;
 
-import java.util.Enumeration;
+import java.io.DataOutputStream;
 import java.util.Iterator;
 import java.util.Vector;
 import java.io.IOException;
@@ -61,7 +61,7 @@ public class ServerThreadBranch implements Runnable{
                     // set status to TWO_WAY
                     r2.status = RouterStatus.TWO_WAY;
                     System.out.println("set " + r2.simulatedIPAddress + " state to TWO_WAY;");
-
+                    System.out.print(">> ");
                     // finally, add the synced router to the ports[] array for this router
                     for (int i = 0; i < router.ports.length; ++i) {
                         if (router.ports[i] == null) {
@@ -183,6 +183,10 @@ public class ServerThreadBranch implements Runnable{
                 }
                 socket.close();
             }
+            else if (packet.sospfType == 2) {
+                String ip = packet.neighborID;
+                DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+            }
         }
 		catch (IOException e) {
             e.printStackTrace();
@@ -195,7 +199,7 @@ public class ServerThreadBranch implements Runnable{
 	    if(t==null) {
 	        t = new Thread(this);
 	        t.start();
-            System.out.print(">> ");
+            //System.out.print(">> ");
         }
     }
 }

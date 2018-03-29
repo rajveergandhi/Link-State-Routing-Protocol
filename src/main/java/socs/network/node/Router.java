@@ -6,7 +6,7 @@ import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.io.*;
 import java.net.*;
-
+import java.util.Timer;
 import socs.network.util.Configuration;
 
 import java.io.BufferedReader;
@@ -16,7 +16,7 @@ import java.util.Vector;
 
 public class Router {
 
-  protected LinkStateDatabase lsd;
+  public LinkStateDatabase lsd;
   public RouterDescription rd = new RouterDescription();
   public ServerThread serverThread;
   public ServerSocket serverSocket;
@@ -40,7 +40,9 @@ public class Router {
     serverSocket = new ServerSocket(rd.processPortNumber);
     serverThread = new ServerThread(serverSocket, this); 
     serverThread.start();
-
+    Timer time = new Timer();
+    HeartbeatTask hbt = new HeartbeatTask(this);
+    time.schedule(hbt, 0, 5000);
   }
 
   /**
@@ -65,8 +67,21 @@ public class Router {
    *
    * @param portNumber the port number which the link attaches at
    */
-  private void processDisconnect(short portNumber) {
+  private void processDisconnect(short portNumber) throws IOException {
+      System.out.println(rd.simulatedIPAddress + ":  lsd before disconnect  " + "  is:\n" + lsd.toString());
+      String ip = ports[portNumber].router2.simulatedIPAddress;
+      LSA lsa = lsd._store.get(rd.simulatedIPAddress);
+      for (LinkDescription ld: lsa.links) {
+          if (ld.linkID.equals(ip)) {
+              lsa.links.remove(ld);
+              break;
+          }
+      }
+      lsa.lsaSeqNumber++;
 
+      System.out.println(rd.simulatedIPAddress + ":  lsd after disconnect  " + "  is:\n" + lsd.toString());
+      LSAUPDATE();
+      ports[portNumber] = null;
   }
 
   /**
@@ -200,8 +215,9 @@ public class Router {
    * This command does trigger the link database synchronization
    */
   private void processConnect(String processIP, short processPort,
-                              String simulatedIP, short weight) {
-
+                              String simulatedIP, short weight) throws IOException, ClassNotFoundException {
+      processAttach(processIP, processPort, simulatedIP, weight);
+      processStart();
   }
 
   /**
