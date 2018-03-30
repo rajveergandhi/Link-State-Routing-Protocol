@@ -1,6 +1,5 @@
 package socs.network.node;
 
-import java.io.DataOutputStream;
 import java.util.Iterator;
 import java.util.Vector;
 import java.io.IOException;
@@ -14,10 +13,10 @@ import socs.network.message.*;
 
 public class ServerThreadBranch implements Runnable{
     private Thread t;
-	public Socket socket;
-	public Router router;
+	private Socket socket;
+	private Router router;
 	
-	public ServerThreadBranch(Socket sock, Router rout){
+	ServerThreadBranch(Socket sock, Router rout){
         socket = sock;
         router = rout;
 	}
