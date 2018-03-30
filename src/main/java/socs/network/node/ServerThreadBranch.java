@@ -80,7 +80,7 @@ public class ServerThreadBranch implements Runnable{
                 LSA neighbor_lsa = null;
                 LinkDescription ld = null;
                 LinkDescription neighbor_ld = null;
-                int weight = 0;
+                int weight;
 
                 Iterator lsa_iterator = packet.lsaArray.iterator();
                 while (lsa_iterator.hasNext()) {
@@ -182,10 +182,6 @@ public class ServerThreadBranch implements Runnable{
                     }
                 }
                 socket.close();
-            }
-            else if (packet.sospfType == 2) {
-                String ip = packet.neighborID;
-                DataOutputStream out = new DataOutputStream(socket.getOutputStream());
             }
         }
 		catch (IOException e) {
