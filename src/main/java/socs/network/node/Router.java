@@ -68,20 +68,31 @@ public class Router {
    * @param portNumber the port number which the link attaches at
    */
   private void processDisconnect(short portNumber) throws IOException {
+      boolean breakOut = false;
+      int port = 0;
       System.out.println(rd.simulatedIPAddress + ":  lsd before disconnect  " + "  is:\n" + lsd.toString());
-      String ip = ports[portNumber].router2.simulatedIPAddress;
-      LSA lsa = lsd._store.get(rd.simulatedIPAddress);
-      for (LinkDescription ld: lsa.links) {
-          if (ld.linkID.equals(ip)) {
-              lsa.links.remove(ld);
-              break;
+      for (int i = 0; i < ports.length; i++) {
+          if (ports[i] != null) {
+              if (ports[i].router2.processPortNumber == portNumber) {
+                  String ip = ports[i].router2.simulatedIPAddress;
+                  LSA lsa = lsd._store.get(rd.simulatedIPAddress);
+                  for (LinkDescription ld: lsa.links) {
+                      if (ld.linkID.equals(ip)) {
+                          lsa.links.remove(ld);
+                          port = i;
+                          breakOut = true;
+                          break;
+                      }
+                  }
+                  lsa.lsaSeqNumber++;
+              }
           }
+          if (breakOut)
+              break;
       }
-      lsa.lsaSeqNumber++;
-
       System.out.println(rd.simulatedIPAddress + ":  lsd after disconnect  " + "  is:\n" + lsd.toString());
       LSAUPDATE();
-      ports[portNumber] = null;
+      ports[port] = null;
   }
 
   /**
