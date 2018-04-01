@@ -91,8 +91,8 @@ public class Router {
               break;
       }
       System.out.println(rd.simulatedIPAddress + ":  lsd after disconnect  " + "  is:\n" + lsd.toString());
-      LSAUPDATE();
       ports[port] = null;
+      LSAUPDATE();
   }
 
   /**
@@ -140,7 +140,7 @@ public class Router {
   /**
    * broadcast Hello to neighbors
    */
-  private void processStart() throws ClassNotFoundException, UnknownHostException, IOException {
+  private void processStart() throws ClassNotFoundException, IOException {
 
     for (int i = 0; i < ports.length; ++i) {
 

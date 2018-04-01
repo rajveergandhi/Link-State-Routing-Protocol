@@ -29,6 +29,7 @@ public class HeartbeatTask extends TimerTask {
                             break;
                         }
                     }
+                    lsa.lsaSeqNumber++;
                     router.ports[i] = null;
                     try {
                         router.LSAUPDATE();
@@ -70,10 +71,10 @@ public class HeartbeatTask extends TimerTask {
                                 break;
                             }
                         }
+                        lsa.lsaSeqNumber++;
                         router.ports[i] = null;
                         try {
                             router.LSAUPDATE();
-                            continue;
                         } catch (IOException ee) {
                             ee.printStackTrace();
                         }
