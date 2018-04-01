@@ -198,22 +198,43 @@ public class Router {
   public void LSAUPDATE() throws IOException {
       for (int i = 0; i<ports.length; ++i) {
           if (ports[i] != null && ports[i].router2.status == RouterStatus.TWO_WAY) {
-              Socket client = new Socket(ports[i].router2.processIPAddress, ports[i].router2.processPortNumber);
-              SOSPFPacket packet = new SOSPFPacket();
-              packet.srcProcessIP = rd.processIPAddress;
-              packet.srcProcessPort = rd.processPortNumber;
-              packet.srcIP = rd.simulatedIPAddress;
-              packet.dstIP = ports[i].router2.simulatedIPAddress;
-              packet.sospfType = 1;
-              packet.routerID = rd.simulatedIPAddress;
-              packet.neighborID = rd.simulatedIPAddress;
-              packet.lsaArray = new Vector<LSA>();
-              for (LSA lsa: lsd._store.values()) {
-                  packet.lsaArray.addElement(lsa);
+              Socket client = null;
+              try {
+                  client = new Socket(ports[i].router2.processIPAddress, ports[i].router2.processPortNumber);
+                  SOSPFPacket packet = new SOSPFPacket();
+                  packet.srcProcessIP = rd.processIPAddress;
+                  packet.srcProcessPort = rd.processPortNumber;
+                  packet.srcIP = rd.simulatedIPAddress;
+                  packet.dstIP = ports[i].router2.simulatedIPAddress;
+                  packet.sospfType = 1;
+                  packet.routerID = rd.simulatedIPAddress;
+                  packet.neighborID = rd.simulatedIPAddress;
+                  packet.lsaArray = new Vector<LSA>();
+                  for (LSA lsa: lsd._store.values()) {
+                      packet.lsaArray.addElement(lsa);
+                  }
+                  ObjectOutputStream outToServer = new ObjectOutputStream(client.getOutputStream());
+                  outToServer.writeObject(packet);
+                  client.close();
+              } catch (ConnectException e) {
+                  LSA lsa = lsd._store.get(rd.simulatedIPAddress);
+                  for (LinkDescription ld2 : lsa.links) {
+                      if (ld2.linkID.equals(ports[i].router2.simulatedIPAddress)) {
+                          lsa.links.remove(ld2);
+                          break;
+                      }
+                  }
+                  lsa.lsaSeqNumber++;
+                  ports[i] = null;
+//                  try {
+//                      LSAUPDATE();
+//                  } catch (IOException ee) {
+//                      ee.printStackTrace();
+//                  }
+//                  continue;
+              } catch (IOException e) {
+                  e.printStackTrace();
               }
-              ObjectOutputStream outToServer = new ObjectOutputStream(client.getOutputStream());
-              outToServer.writeObject(packet);
-              client.close();
           }
       }
   }
