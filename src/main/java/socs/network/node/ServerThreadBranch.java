@@ -23,17 +23,9 @@ public class ServerThreadBranch implements Runnable{
 	}
 
 	public void run() {
-	    SOSPFPacket packet = null;
-        ObjectInputStream inStream = null;
-	    try {
-            inStream = new ObjectInputStream(socket.getInputStream());
-            packet = (SOSPFPacket) inStream.readObject();
-        } catch (ClassNotFoundException ce) {
-            ce.printStackTrace();
-        } catch (IOException e) {
-	        e.printStackTrace();
-        }
-        if (packet!= null) {
+        try {
+            ObjectInputStream inStream = new ObjectInputStream(socket.getInputStream());
+            SOSPFPacket packet = (SOSPFPacket) inStream.readObject();
             if (packet.sospfType == 0) {
 
                 System.out.println("received HELLO from " + packet.neighborID + ";");
@@ -58,19 +50,11 @@ public class ServerThreadBranch implements Runnable{
                 sPacket.neighborID = router.rd.simulatedIPAddress;
 
                 // reply with HELLO for the sync
-                try {
-                    ObjectOutputStream outToServer = new ObjectOutputStream(socket.getOutputStream());
-                    outToServer.writeObject(sPacket);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                ObjectOutputStream outToServer = new ObjectOutputStream(socket.getOutputStream());
+                outToServer.writeObject(sPacket);
 
                 // receive the second HELLO
-                try {
-                    packet = (SOSPFPacket) inStream.readObject();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+                packet = (SOSPFPacket) inStream.readObject();
                 if (packet.sospfType == 0) {
                     System.out.println("received HELLO from " + packet.neighborID + ";");
 
@@ -86,12 +70,9 @@ public class ServerThreadBranch implements Runnable{
                         }
                     }
                 }
-                try {
-                    socket.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            } else if (packet.sospfType == 1) {
+                socket.close();
+            }
+            else if (packet.sospfType == 1) {
                 boolean sendPacket = false;
                 boolean sendToNeighbor = false;
                 boolean addLinkToLSA = false;
@@ -112,13 +93,13 @@ public class ServerThreadBranch implements Runnable{
                             addLinkToLSA = true;
                         }
                     }
-                    if ((router.lsd._store.get(next_lsa.linkStateID) == null) || addLinkToLSA) {
+                    if ((router.lsd._store.get(next_lsa.linkStateID) == null) || addLinkToLSA ) {
                         sendPacket = true;
                         router.lsd._store.put(next_lsa.linkStateID, next_lsa);
                         for (int i = 0; i < router.ports.length; i++) {
                             // add new link to the lsa, which orginated at the server end
                             if (router.ports[i] != null && router.ports[i].router2.simulatedIPAddress.equals(next_lsa.linkStateID) && router.ports[i].router2.status == RouterStatus.TWO_WAY) {
-                                for (LinkDescription l : next_lsa.links)
+                                for (LinkDescription l: next_lsa.links)
                                     if (l.linkID.equals(router.rd.simulatedIPAddress))
                                         ld = l;
                                 if (ld != null) {
@@ -135,28 +116,7 @@ public class ServerThreadBranch implements Runnable{
                 if (sendPacket) {
                     for (int i = 0; i < router.ports.length; i++) {
                         if (router.ports[i] != null && router.ports[i].router2.simulatedIPAddress.equals(packet.routerID) == false && router.ports[i].router2.status == RouterStatus.TWO_WAY) {
-                            Socket client = null;
-                            try {
-                                client = new Socket(router.ports[i].router2.processIPAddress, router.ports[i].router2.processPortNumber);
-                            } catch (ConnectException e) {
-                                LSA lsa = router.lsd._store.get(router.rd.simulatedIPAddress);
-                                for (LinkDescription ld2 : lsa.links) {
-                                    if (ld2.linkID.equals(router.ports[i].router2.simulatedIPAddress)) {
-                                        lsa.links.remove(ld2);
-                                        break;
-                                    }
-                                }
-                                lsa.lsaSeqNumber++;
-                                router.ports[i] = null;
-                                try {
-                                    router.LSAUPDATE();
-                                } catch (IOException ee) {
-                                    ee.printStackTrace();
-                                }
-                                continue;
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
+                            Socket client = new Socket(router.ports[i].router2.processIPAddress, router.ports[i].router2.processPortNumber);
                             SOSPFPacket sPacket = new SOSPFPacket();
                             sPacket.sospfType = 1;
                             sPacket.srcProcessIP = router.rd.processIPAddress;
@@ -166,44 +126,19 @@ public class ServerThreadBranch implements Runnable{
                             sPacket.routerID = router.rd.simulatedIPAddress;
                             sPacket.neighborID = router.rd.simulatedIPAddress;
                             sPacket.lsaArray = new Vector<LSA>();
-                            for (LSA update_lsa : router.lsd._store.values()) {
+                            for (LSA update_lsa: router.lsd._store.values()) {
                                 sPacket.lsaArray.addElement(update_lsa);
                             }
-                            ObjectOutputStream out = null;
-                            try {
-                                out = new ObjectOutputStream(client.getOutputStream());
-                            } catch (ConnectException e) {
-                                LSA lsa = router.lsd._store.get(router.rd.simulatedIPAddress);
-                                for (LinkDescription ld2 : lsa.links) {
-                                    if (ld2.linkID.equals(router.ports[i].router2.simulatedIPAddress)) {
-                                        lsa.links.remove(ld2);
-                                        break;
-                                    }
-                                }
-                                lsa.lsaSeqNumber++;
-                                router.ports[i] = null;
-                                try {
-                                    router.LSAUPDATE();
-                                } catch (IOException ee) {
-                                    ee.printStackTrace();
-                                }
-                                continue;
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                            try {
-                                out.writeObject(sPacket);
-                                client.close();
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
+                            ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
+                            out.writeObject(sPacket);
+                            client.close();
                         }
                     }
                 }
 
                 if (sendToNeighbor) {
                     LSA this_lsa = router.lsd._store.get(router.rd.simulatedIPAddress);
-                    for (LinkDescription l : this_lsa.links) {
+                    for (LinkDescription l: this_lsa.links) {
                         if (l.linkID.equals(router.rd.simulatedIPAddress)) {
                             ld = l;
                         }
@@ -213,7 +148,7 @@ public class ServerThreadBranch implements Runnable{
 
                         ld.linkID = neighbor_lsa.linkStateID;
                         ld.portNum = neighbor;
-                        for (LinkDescription l : neighbor_lsa.links) {
+                        for (LinkDescription l: neighbor_lsa.links) {
                             if (l.linkID.equals(router.rd.simulatedIPAddress)) {
                                 neighbor_ld = l;
                             }
@@ -227,28 +162,7 @@ public class ServerThreadBranch implements Runnable{
                     }
                     for (int i = 0; i < router.ports.length; i++) {
                         if (router.ports[i] != null && router.ports[i].router2.status == RouterStatus.TWO_WAY) {
-                            Socket client = null;
-                            try {
-                                client = new Socket(router.ports[i].router2.processIPAddress, router.ports[i].router2.processPortNumber);
-                            } catch (ConnectException e) {
-                                LSA lsa = router.lsd._store.get(router.rd.simulatedIPAddress);
-                                for (LinkDescription ld2 : lsa.links) {
-                                    if (ld2.linkID.equals(router.ports[i].router2.simulatedIPAddress)) {
-                                        lsa.links.remove(ld2);
-                                        break;
-                                    }
-                                }
-                                lsa.lsaSeqNumber++;
-                                router.ports[i] = null;
-                                try {
-                                    router.LSAUPDATE();
-                                } catch (IOException ee) {
-                                    ee.printStackTrace();
-                                }
-                                continue;
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
+                            Socket client = new Socket(router.ports[i].router2.processIPAddress, router.ports[i].router2.processPortNumber);
                             SOSPFPacket cPacket = new SOSPFPacket();
                             cPacket.sospfType = 1;
                             cPacket.srcProcessIP = router.rd.processIPAddress;
@@ -258,48 +172,25 @@ public class ServerThreadBranch implements Runnable{
                             cPacket.routerID = router.rd.simulatedIPAddress;
                             cPacket.neighborID = router.rd.simulatedIPAddress;
                             cPacket.lsaArray = new Vector<LSA>();
-                            for (LSA update_lsa : router.lsd._store.values()) {
+                            for (LSA update_lsa: router.lsd._store.values()) {
                                 cPacket.lsaArray.addElement(update_lsa);
                             }
-                            ObjectOutputStream out = null;
-                            try {
-                                out = new ObjectOutputStream(client.getOutputStream());
-                            } catch (ConnectException e) {
-                                LSA lsa = router.lsd._store.get(router.rd.simulatedIPAddress);
-                                for (LinkDescription ld2 : lsa.links) {
-                                    if (ld2.linkID.equals(router.ports[i].router2.simulatedIPAddress)) {
-                                        lsa.links.remove(ld2);
-                                        break;
-                                    }
-                                }
-                                lsa.lsaSeqNumber++;
-                                router.ports[i] = null;
-                                try {
-                                    router.LSAUPDATE();
-                                } catch (IOException ee) {
-                                    ee.printStackTrace();
-                                }
-                                continue;
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                            try {
-                                out.writeObject(cPacket);
-                                client.close();
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
+                            ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
+                            out.writeObject(cPacket);
+                            client.close();
                         }
                     }
                 }
-                try {
-                    socket.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                socket.close();
             }
         }
-	}
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+        catch (ClassNotFoundException c) {
+            c.printStackTrace();
+        }
+    }
 	public void start() {
 	    if(t==null) {
 	        t = new Thread(this);
