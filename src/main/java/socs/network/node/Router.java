@@ -226,12 +226,6 @@ public class Router {
                   }
                   lsa.lsaSeqNumber++;
                   ports[i] = null;
-//                  try {
-//                      LSAUPDATE();
-//                  } catch (IOException ee) {
-//                      ee.printStackTrace();
-//                  }
-//                  continue;
               } catch (IOException e) {
                   e.printStackTrace();
               }
