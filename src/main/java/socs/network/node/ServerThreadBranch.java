@@ -116,7 +116,28 @@ public class ServerThreadBranch implements Runnable{
                 if (sendPacket) {
                     for (int i = 0; i < router.ports.length; i++) {
                         if (router.ports[i] != null && router.ports[i].router2.simulatedIPAddress.equals(packet.routerID) == false && router.ports[i].router2.status == RouterStatus.TWO_WAY) {
-                            Socket client = new Socket(router.ports[i].router2.processIPAddress, router.ports[i].router2.processPortNumber);
+                            Socket client = null;
+                            try {
+                                client = new Socket(router.ports[i].router2.processIPAddress, router.ports[i].router2.processPortNumber);
+                            } catch (ConnectException e) {
+                                LSA lsa = router.lsd._store.get(router.rd.simulatedIPAddress);
+                                for (LinkDescription ld2 : lsa.links) {
+                                    if (ld2.linkID.equals(router.ports[i].router2.simulatedIPAddress)) {
+                                        lsa.links.remove(ld2);
+                                        break;
+                                    }
+                                }
+                                lsa.lsaSeqNumber++;
+                                router.ports[i] = null;
+                                try {
+                                    router.LSAUPDATE();
+                                } catch (IOException ee) {
+                                    ee.printStackTrace();
+                                }
+                                continue;
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
                             SOSPFPacket sPacket = new SOSPFPacket();
                             sPacket.sospfType = 1;
                             sPacket.srcProcessIP = router.rd.processIPAddress;
@@ -162,7 +183,28 @@ public class ServerThreadBranch implements Runnable{
                     }
                     for (int i = 0; i < router.ports.length; i++) {
                         if (router.ports[i] != null && router.ports[i].router2.status == RouterStatus.TWO_WAY) {
-                            Socket client = new Socket(router.ports[i].router2.processIPAddress, router.ports[i].router2.processPortNumber);
+                            Socket client = null;
+                            try {
+                                client = new Socket(router.ports[i].router2.processIPAddress, router.ports[i].router2.processPortNumber);
+                            } catch (ConnectException e) {
+                                LSA lsa = router.lsd._store.get(router.rd.simulatedIPAddress);
+                                for (LinkDescription ld2 : lsa.links) {
+                                    if (ld2.linkID.equals(router.ports[i].router2.simulatedIPAddress)) {
+                                        lsa.links.remove(ld2);
+                                        break;
+                                    }
+                                }
+                                lsa.lsaSeqNumber++;
+                                router.ports[i] = null;
+                                try {
+                                    router.LSAUPDATE();
+                                } catch (IOException ee) {
+                                    ee.printStackTrace();
+                                }
+                                continue;
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
                             SOSPFPacket cPacket = new SOSPFPacket();
                             cPacket.sospfType = 1;
                             cPacket.srcProcessIP = router.rd.processIPAddress;
